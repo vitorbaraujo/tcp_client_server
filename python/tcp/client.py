@@ -4,7 +4,7 @@ import sys
 operator_dict = { '+': 'add', '-': 'sub', '*' : 'mul', '/' : 'div' }
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-port = 10002
+port = int(sys.argv[1])
 server_address = ('localhost', port)
 print('connecting to %s port %s' % server_address)
 sock.connect(server_address)

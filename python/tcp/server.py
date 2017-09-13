@@ -1,4 +1,5 @@
 import socket
+import sys
 
 def calculate(operation):
     op, first_member, second_member = operation.split()
@@ -29,7 +30,7 @@ def calculate(operation):
 
 # socket initialization
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-port = 10002
+port = int(sys.argv[1])
 server_address = ('localhost', port)
 print('starting up on %s port %s' % server_address)
 
