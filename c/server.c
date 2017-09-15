@@ -44,6 +44,7 @@ int main(int argc, char* argv[]){
   while(1){
     do{
       read_v = read(client, buffer, 512);
+      printf("received [%s]\n", buffer);
     }while(read_v == 0);
     printf("%s\n", buffer);
     char* bla = "lala";
