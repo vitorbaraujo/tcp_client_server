@@ -1,83 +1,54 @@
 #include <stdio.h>
-#include <stdlib.h> // atoi
-#include <string.h> // memset
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 
-#include <sys/types.h> // socket
-#include <sys/socket.h> // socket
-#include <unistd.h> // close
+int main(int argc, char* argv[]){
+  if(argc < 2){
+    printf("Specify port\n");
+    exit(1);
+  }
 
-#include <arpa/inet.h> // htons
+  char buffer[512] = {0};
+  struct sockaddr_in server_address;
+  int server, client, read_v, addr_length = sizeof(server_address);
 
-int main(int argc, char * argv[]){
-    if(argc < 2){
-        printf("You need to specify the port\n");
-    }
+  if((server = socket(AF_INET, SOCK_STREAM, 0)) == 0){
+    printf("Error on socket\n");
+    exit(1);
+  }
 
-    int port = atoi(argv[1]);
+  server_address.sin_family = AF_INET;
+  server_address.sin_port = htons(atoi(argv[1]));
+  server_address.sin_addr.s_addr = INADDR_ANY;
+  memset(server_address.sin_zero, '\0', sizeof(server_address.sin_zero));
 
-    // create tcp socket
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
+  if(bind(server, (struct sockaddr *) &server_address, sizeof(server_address))){
+    printf("Error on bind\n");
+    exit(1);
+  }
 
-    if(sock < 0){
-        printf("error opening socket\n");
-    }
+  if(listen(server, 1) < 0){
+    printf("Error on listening\n");
+    exit(1);
+  }
 
-    struct sockaddr_in server_addr;
+  if((client = accept(server, (struct sockaddr *)&server_address, (socklen_t*) &addr_length)) < 0){
+    printf("Error accepting\n");
+    exit(1);
+  }
 
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    memset(server_addr.sin_zero, '\0', sizeof server_addr.sin_zero);
+  while(1){
+    do{
+      read_v = read(client, buffer, 512);
+    }while(read_v == 0);
+    printf("%s\n", buffer);
+    char* bla = "lala";
+    send(client, bla, strlen(bla), 0);
+  }
 
-    int bind_v = bind(sock, (struct sockaddr*) &server_addr, sizeof server_addr);
-
-    if(bind_v < 0){
-        printf("error on bind\n");
-    }
-
-    int listen_v = listen(sock, 5);
-
-    if(listen_v < 0){
-        printf("error on listen\n");
-    }
-
-    while(1){
-        printf("Waiting for a connection...\n");
-
-        struct sockaddr_storage client_addr;
-
-        int client_addr_len = sizeof client_addr;
-        int connection_sock = accept(sock, (struct sockaddr*) &client_addr, &client_addr_len);
-
-        if(connection_sock < 0){
-            printf("error on accept\n");
-        }
-
-        char *message = "Server connected";
-        int bytes = send(sock, message, strlen(message), 0);
-
-        if(bytes != strlen(message)){
-            printf("Message was not sent completely\n");
-        }
-
-        char input[256];
-
-        int recv_bytes = recv(connection_sock, input, 256, 0);
-
-        if(recv_bytes == -1){
-            printf("Error on recv_bytes\n");
-        }
-        else if(recv_bytes == 0){
-            printf("client has closed the connection\n");
-        }
-
-        if(strcmp(input, "close") == 0){
-            printf("Closing connection...\n");
-            close(connection_sock);
-        }
-
-        printf("Data received: [%s]\n", input);
-    }
-
-    return 0;
+  return 0;
 }

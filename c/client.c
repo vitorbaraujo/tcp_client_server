@@ -6,34 +6,41 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-
 int main(int argc, char* argv[]){
-  if(argc < 3){
-    printf("You need to specify IP and port\n");
+  if(argc < 2){
+    printf("Specify port\n");
     exit(1);
   }
 
-  int sock;
+  struct sockaddr_in client_address, server_address;
+  int server, read_v;
+  char buffer[512] = {0};
+  char operacao[512] = {0};
 
-  struct sockaddr_in server_addr;
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(atoi(argv[2]));
-  server_addr.sin_addr.s_addr = inet_addr(argv[1]);
-  memset(server_addr.sin_zero, '\0', sizeof(server_addr.sin_zero));
-
-  sock = socket(AF_INET, SOCK_STREAM, 0);
-
-  if(sock < 0){
-    printf("Error on socket\n");
+  if((server = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+    printf("Socket error\n");
     exit(1);
   }
 
-  if(connect(sock, (struct sockaddr *) &server_addr, sizeof(struct sockaddr)) < 0){
-    printf("Error on connecting\n");
+  server_address.sin_family = AF_INET;
+  server_address.sin_port = htons(atoi(argv[1]));
+  server_address.sin_addr.s_addr = INADDR_ANY;
+  memset(server_address.sin_zero, '\0', sizeof(server_address.sin_zero));
+
+  if(connect(server, (struct sockaddr *) &server_address, sizeof(server_address)) < 0){
+    printf("Error on connect\n");
+    exit(1);
   }
+
+  printf("Digite as operacoes:\n");
   while(1){
-    char* message = "1";
-    send(sock, message, strlen(message), 0);
+      fgets(operacao, 512, stdin);
+      send(server, operacao, strlen(operacao), 0);
+      do{
+        read_v = read(server, buffer, 1024);
+      }while(read_v == 0);
+      printf("%s\n", buffer);
   }
+
   return 0;
 }
