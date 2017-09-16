@@ -2,11 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+
+typedef struct req {
+  char op[3];
+  int op1;
+  int op2;
+} req_pkt;
+
+typedef struct answ {
+  int invalid;
+  int value;
+} answ_pkt;
 
 char *parse_op(char op){
     if(op == '+') return "add";
@@ -17,9 +27,10 @@ char *parse_op(char op){
     return "inv";
 }
 
-char *parse_msg(char *input){
+req_pkt *parse_msg(char *input){
     char first_n[512], second_n[512], op;
     int frst_num_ptr = 0, sec_num_ptr = 0;
+    req_pkt *requisition = malloc(sizeof(req_pkt));
 
     int op_found = 0;
     int input_size = strlen(input);
@@ -47,16 +58,17 @@ char *parse_msg(char *input){
     char *operator = parse_op(op);
 
     if(strcmp(operator, "inv") == 0){
-        return "inv 0 0";
+        strcpy(requisition->op, "inv");
+        requisition->op1 = 0;
+        requisition->op2 = 0;
+        return requisition;
     }
 
-    char *expression;
+    strcpy(requisition->op, operator);
+    requisition->op1 = atoi(first_n);
+    requisition->op2 = atoi(second_n);
 
-    expression = (char *)malloc(512 * sizeof(char));
-
-    sprintf(expression, "%s %s %s", operator, first_n, second_n);
-
-    return expression;
+    return requisition;
 }
 
 int main(int argc, char* argv[]){
@@ -67,7 +79,6 @@ int main(int argc, char* argv[]){
 
   struct sockaddr_in client_address, server_address;
   int server, read_v;
-  char buffer[512] = {0};
   char operacao[512] = {0};
 
   if((server = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -86,14 +97,21 @@ int main(int argc, char* argv[]){
   }
 
   printf("Digite as operacoes:\n");
+  req_pkt *data_to_send = malloc(sizeof(req_pkt));
+  answ_pkt *result = malloc(sizeof(answ_pkt));
+
   while(1){
       fgets(operacao, 512, stdin);
-      char *data_to_send = parse_msg(operacao);
-      send(server, data_to_send, strlen(data_to_send), 0);
+      data_to_send = parse_msg(operacao);
+      send(server, data_to_send, sizeof(req_pkt), 0);
       do{
-        read_v = read(server, buffer, 1024);
+        read_v = read(server, result, sizeof(answ_pkt));
       }while(read_v == 0);
-      printf("%s\n", buffer);
+      if(result->invalid == 0){
+        printf("Resultado: %d\n", result->value);
+      }else{
+        printf("Houve um erro no pedido de calculo\n");
+      }
   }
 
   return 0;
