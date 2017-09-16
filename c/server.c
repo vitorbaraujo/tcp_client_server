@@ -68,7 +68,7 @@ answ_pkt *calc(req_pkt *requisition){
 }
 
 int main(int argc, char* argv[]){
-  if(argc < 2){
+  if(argc < 3){
     printf("Specify port\n");
     exit(1);
   }
@@ -83,8 +83,8 @@ int main(int argc, char* argv[]){
   }
 
   server_address.sin_family = AF_INET;
-  server_address.sin_port = htons(atoi(argv[1]));
-  server_address.sin_addr.s_addr = INADDR_ANY;
+  server_address.sin_port = htons(atoi(argv[2]));
+  server_address.sin_addr.s_addr = inet_addr(argv[1]);
   memset(server_address.sin_zero, '\0', sizeof(server_address.sin_zero));
 
   if(bind(server, (struct sockaddr *) &server_address, sizeof(server_address))){
